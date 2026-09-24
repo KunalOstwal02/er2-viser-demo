@@ -21,10 +21,32 @@ The Panda model is fetched once from MuJoCo Menagerie (see `third_party/README.m
 On a laptop with a display you can leave `MUJOCO_GL` unset; the app defaults to EGL,
 which works on NVIDIA GPUs.
 
+## Presets
+
+| Preset | What it shows | Steps |
+|---|---|---|
+| `pick_place` | Put the red cube in the blue bowl, with distractors | ~3 |
+| `sort` | Sort by colour into two bins | ~9 |
+| `spatial` | Build a tower from 3 cubes of different sizes, largest at the bottom (reasoning about size and stacking) | ~5 |
+| `clutter` | Clear a grey mat of 6 tightly packed objects (grasps in clutter, placing on free table space) | ~13 |
+| `multi_sort` | 4 containers; sort by shape **and** colour, and leave distractors alone | ~13 |
+
+The task text is only the default; edit it freely (e.g. "put the smallest object to the left of
+the tallest one" on `spatial`). Each preset sets its own step limit.
+
+Manipulation details worth knowing when explaining the demo:
+- **Stacking:** pointing at the top face of an object stacks the held object on it, centred and
+  with the rotation lined up. Pointing at an object that is already inside a bin or bowl means
+  "into that container".
+- **Containers:** objects are dropped at the free spot farthest from what's already inside.
+- **Clutter:** of the equivalent grasp angles, the one with the most finger clearance from
+  neighbours is chosen, and the fingers open only as wide as the object needs.
+- **Transit height** rises automatically above the tallest stack.
+
 ## Using it
 
 **Agent tab**
-1. Pick a **Scene preset** (`pick_place`, `sort`, or one you saved). The task text fills in.
+1. Pick a **Scene preset** (see the table above, or one you saved). The task text fills in.
    You can edit it freely.
 2. Press **Run**. Each turn, ER-2's point appears on the *Cameras* tab. The 3D view shows the
    target (magenta sphere) and the planned gripper path (blue line).
@@ -53,7 +75,7 @@ turn by turn; the motion is re-simulated. The banner shows **REPLAY** so the aud
 it's not live.
 
 ### Rehearsal checklist
-1. Run `pick_place` and `sort` live 2–3 times each. Note which recording folders were good.
+1. Run each preset you plan to show live 2–3 times. Note which recording folders were good.
 2. Delete bad runs from `recordings/`.
 3. Turn Wi-Fi off and replay one good run of each preset end to end.
 4. During the talk, go live if the network is fine; otherwise switch to Replay.

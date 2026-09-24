@@ -1,0 +1,13 @@
+{
+  "name": "spatial",
+  "prompt": "Build a tower from the three cubes: the largest cube at the bottom, the smallest cube on top.",
+  "max_steps": 12,
+  "objects": [
+    {"name": "large_red_cube", "kind": "cube", "color": "red", "x": 0.44, "y": -0.2, "yaw": 0.35, "size": [0.06]},
+    {"name": "medium_blue_cube", "kind": "cube", "color": "blue", "x": 0.62, "y": 0.14, "yaw": -0.5, "size": [0.045]},
+    {"name": "small_yellow_cube", "kind": "cube", "color": "yellow", "x": 0.46, "y": 0.22, "yaw": 0.8, "size": [0.032]},
+    {"name": "tall_green_cylinder", "kind": "cylinder", "color": "green", "x": 0.63, "y": -0.12, "size": [0.022, 0.1]},
+    {"name": "short_orange_cylinder", "kind": "cylinder", "color": "orange", "x": 0.38, "y": 0.04, "size": [0.026, 0.035]},
+    {"name": "purple_cuboid", "kind": "cuboid", "color": "purple", "x": 0.55, "y": -0.01, "yaw": 1.1}
+  ]
+}

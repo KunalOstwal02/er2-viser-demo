@@ -34,6 +34,7 @@ COLORS: dict[str, tuple[float, float, float]] = {
     "purple": (0.55, 0.25, 0.75),
     "white": (0.92, 0.92, 0.92),
     "black": (0.12, 0.12, 0.12),
+    "grey": (0.45, 0.45, 0.47),
 }
 
 # kind → default size. cube: edge; cuboid: (x, y, z) full extents; cylinder: (radius, height);
@@ -45,6 +46,7 @@ DEFAULT_SIZES: dict[str, tuple[float, ...]] = {
     "sphere": (0.024,),
     "bowl": (0.085, 0.04),
     "bin": (0.16, 0.05),
+    "mat": (0.3, 0.22),  # flat, non-colliding zone marker: (x extent, y extent)
 }
 GRASPABLE = ("cube", "cuboid", "cylinder", "sphere")
 CONTAINERS = ("bowl", "bin")
@@ -75,6 +77,8 @@ class ObjectSpec:
     @property
     def height(self) -> float:
         s = self.size
+        if self.kind == "mat":
+            return 0.002
         if self.kind == "cube":
             return s[0]
         if self.kind == "cuboid":
@@ -105,6 +109,7 @@ class SceneSpec:
     name: str
     prompt: str
     objects: list[ObjectSpec]
+    max_steps: int = 12
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), indent=2)
@@ -115,6 +120,7 @@ class SceneSpec:
             name=data["name"],
             prompt=data.get("prompt", ""),
             objects=[ObjectSpec(**o) for o in data["objects"]],
+            max_steps=int(data.get("max_steps", 12)),
         )
 
     @classmethod
@@ -171,6 +177,12 @@ def _yaw_quat(yaw: float) -> list[float]:
 def _add_object(spec: mujoco.MjSpec, obj: ObjectSpec) -> None:
     rgba = [*COLORS[obj.color], 1.0]
     z = TABLE_TOP + (obj.height / 2 if obj.graspable else 0.0) + 0.001
+    if obj.kind == "mat":
+        # Mocap body: draggable in the editor, invisible to physics.
+        body = spec.worldbody.add_body(name=obj.name, pos=[obj.x, obj.y, 0.0], quat=_yaw_quat(obj.yaw), mocap=True)
+        body.add_geom(name=f"{obj.name}_g", type=mujoco.mjtGeom.mjGEOM_BOX, size=[obj.size[0] / 2, obj.size[1] / 2, 0.001],
+                      pos=[0, 0, 0.001], rgba=rgba, contype=0, conaffinity=0)
+        return
     body = spec.worldbody.add_body(name=obj.name, pos=[obj.x, obj.y, z], quat=_yaw_quat(obj.yaw))
     body.add_freejoint(name=f"{obj.name}_free")
     common = dict(rgba=rgba, friction=[1.5, 0.02, 0.002], condim=4, solref=[0.01, 1], solimp=[0.95, 0.99, 0.001, 0.5, 2])
