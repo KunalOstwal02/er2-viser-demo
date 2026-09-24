@@ -140,8 +140,11 @@ The design notes are in [docs/design.md](docs/design.md).
 ```bash
 pip install -e ".[dev]"
 ruff check src tests
-pytest -q          # no API calls; about 6 minutes on a laptop CPU
+pytest -q          # no API calls; about 5 minutes
 ```
+
+If you have ROS 2 sourced, its pytest plugins end up on `PYTHONPATH` and break collection. Run
+`PYTHONPATH= pytest -q` instead.
 
 The end-to-end tests use a **test-only oracle** client that writes ER-2-format JSON from ground
 truth, so they can exercise the whole pipeline. It is never used by the app; don't present its
