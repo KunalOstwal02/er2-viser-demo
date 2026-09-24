@@ -1,0 +1,12 @@
+{
+  "name": "sort",
+  "prompt": "Sort the objects by color: put every red object in the red bin and every blue object in the blue bin.",
+  "objects": [
+    {"name": "red_bin", "kind": "bin", "color": "red", "x": 0.52, "y": 0.3},
+    {"name": "blue_bin", "kind": "bin", "color": "blue", "x": 0.52, "y": -0.3},
+    {"name": "red_cube", "kind": "cube", "color": "red", "x": 0.42, "y": -0.08, "yaw": 0.5},
+    {"name": "blue_cube", "kind": "cube", "color": "blue", "x": 0.6, "y": 0.08, "yaw": -0.2},
+    {"name": "red_cylinder", "kind": "cylinder", "color": "red", "x": 0.62, "y": -0.1},
+    {"name": "blue_cylinder", "kind": "cylinder", "color": "blue", "x": 0.4, "y": 0.1}
+  ]
+}

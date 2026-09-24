@@ -1,0 +1,10 @@
+{
+  "name": "pick_place",
+  "prompt": "Put the red cube in the blue bowl.",
+  "objects": [
+    {"name": "red_cube", "kind": "cube", "color": "red", "x": 0.48, "y": 0.14, "yaw": 0.3},
+    {"name": "blue_bowl", "kind": "bowl", "color": "blue", "x": 0.55, "y": -0.16},
+    {"name": "green_cylinder", "kind": "cylinder", "color": "green", "x": 0.38, "y": 0.0},
+    {"name": "yellow_cube", "kind": "cube", "color": "yellow", "x": 0.62, "y": 0.1, "yaw": -0.4}
+  ]
+}
