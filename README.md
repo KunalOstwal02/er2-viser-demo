@@ -23,7 +23,7 @@ and replay every run.
 Requires Python 3.11+ and Linux, macOS or Windows. A GPU is not needed but makes rendering faster.
 
 ```bash
-git clone <this repo> er2-viser-demo && cd er2-viser-demo
+git clone https://github.com/KunalOstwal02/er2-viser-demo.git && cd er2-viser-demo
 python -m venv .venv && source .venv/bin/activate      # or: conda create -n er2 python=3.11
 pip install -e .
 er2-demo                                               # opens on http://localhost:8080
