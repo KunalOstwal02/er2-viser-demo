@@ -13,8 +13,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from er2_demo.planner import JointTrajectory, Planner, PlanningError, grasp_yaw_for
-from er2_demo.scene import CONTAINERS, GRIPPER_OPEN, HOME_Q
+from er2_demo.planner import CLEAR_Z, JointTrajectory, Planner, PlanningError, grasp_yaw_candidates, wrap
+from er2_demo.scene import CONTAINERS, GRIPPER_OPEN, HOME_Q, ObjectSpec
 from er2_demo.sim import Capture
 
 SEARCH_RADIUS_PX = 14
@@ -48,7 +48,7 @@ def project(cap: Capture, world: np.ndarray) -> tuple[float, float] | None:
     return (v / h * 1000, u / w * 1000)
 
 
-def object_at(cap: Capture, u: int, v: int, *, prefer: str) -> str | None:
+def object_at(cap: Capture, u: int, v: int, *, prefer: str, exclude: str | None = None) -> str | None:
     """Object under the pixel; if none, the nearest ``prefer`` object within a small radius."""
     h, w = cap.segmentation.shape
 
@@ -56,7 +56,7 @@ def object_at(cap: Capture, u: int, v: int, *, prefer: str) -> str | None:
         return cap.geom_to_object.get(int(cap.segmentation[vv, uu]))
 
     def ok(name: str | None) -> bool:
-        if name is None:
+        if name is None or name == exclude:
             return False
         spec = cap.state.objects[name].spec
         return spec.graspable if prefer == "graspable" else spec.kind in CONTAINERS
@@ -110,30 +110,101 @@ class SkillPlanner:
             if obj.spec.kind in ("cube", "cuboid", "cylinder"):
                 grasp_z = max(float(obj.pos[2]) + obj.spec.height / 2 - 0.022, 0.018)
             target = np.array([obj.pos[0], obj.pos[1], grasp_z])
-            yaw = grasp_yaw_for(obj.spec.kind, obj.yaw, state.tcp_yaw)
-            traj = self.planner.pick(state.q, state.grip, target, yaw)
+            yaw = _best_grasp_yaw(state, name)
+            open_width = min(0.04, obj.spec.grip_width / 2 + 0.014)
+            traj = self.planner.pick(state.q, state.grip, target, yaw, open_grip=open_width / 0.04 * GRIPPER_OPEN,
+                                     clear_z=_clear_z(state))
             return PlannedAction("pick", traj, target, name, f"pick {obj.spec.display_name}")
 
         if action == "place":
             if not state.held:
                 raise PlanningError("not holding anything; pick an object first")
-            held = state.objects[state.held].spec
-            container = object_at(cap, u, v, prefer="container")
+            held_state = state.objects[state.held]
+            held = held_state.spec
+            clear_z = _clear_z(state)
+            container = object_at(cap, u, v, prefer="container", exclude=state.held)
+            base = object_at(cap, u, v, prefer="graspable", exclude=state.held)
+            direct = cap.geom_to_object.get(int(cap.segmentation[v, u]))
+            if base is not None and direct == base:
+                # Pointing at an object that already sits in a container means "into that container".
+                holder = _container_holding(state, base)
+                if holder is not None:
+                    container, base = holder, None
+            if base is not None and direct == base:
+                # Stack: centre on the object below and line the held object up with it.
+                b = state.objects[base]
+                top = float(b.pos[2]) + b.spec.height / 2
+                target = np.array([b.pos[0], b.pos[1], top + held.height / 2 + 0.008])
+                yaw = state.tcp_yaw
+                if held.kind in ("cube", "cuboid") and b.spec.kind in ("cube", "cuboid"):
+                    step = math.pi / 2 if held.kind == "cube" and b.spec.kind == "cube" else math.pi
+                    delta = (b.yaw - held_state.yaw + step / 2) % step - step / 2
+                    yaw = wrap(state.tcp_yaw + delta)
+                traj = self.planner.place(state.q, state.grip, target, yaw=yaw, clear_z=clear_z, release_speed=0.04)
+                return PlannedAction("place", traj, target, base, f"stack {held.display_name} on {b.spec.display_name}")
             if container is not None:
                 c = state.objects[container]
                 release_z = c.spec.height + held.height / 2 + 0.015
                 x, y = _free_spot(state, container, state.held)
                 target = np.array([x, y, release_z])
-                desc = f"place {held.display_name} in {c.spec.display_name}"
-            else:
-                surface = backproject(cap, u, v)
-                target = np.array([surface[0], surface[1], max(surface[2], 0.0) + held.height / 2 + 0.012])
-                under = cap.geom_to_object.get(int(cap.segmentation[v, u]))
-                desc = f"place {held.display_name} " + (f"on {under.replace('_', ' ')}" if under else "on the table")
-            traj = self.planner.place(state.q, state.grip, target)
-            return PlannedAction("place", traj, target, container, desc)
+                traj = self.planner.place(state.q, state.grip, target, clear_z=clear_z)
+                return PlannedAction("place", traj, target, container,
+                                     f"place {held.display_name} in {c.spec.display_name}")
+            surface = backproject(cap, u, v)
+            target = np.array([surface[0], surface[1], max(surface[2], 0.0) + held.height / 2 + 0.012])
+            where = f"on {direct.replace('_', ' ')}" if direct else "on the table"
+            traj = self.planner.place(state.q, state.grip, target, clear_z=clear_z)
+            return PlannedAction("place", traj, target, None, f"place {held.display_name} {where}")
 
         raise PlanningError(f"unknown action {action!r}")
+
+
+def _footprint(spec: ObjectSpec) -> float:
+    """Horizontal radius of an object's footprint."""
+    if spec.kind == "bowl":
+        return spec.size[0]
+    if spec.kind == "bin":
+        return spec.size[0] / 2 + 0.01
+    if spec.kind == "mat":
+        return 0.0
+    if spec.kind == "cuboid":
+        return math.hypot(spec.size[0], spec.size[1]) / 2
+    return max(spec.grip_width, spec.height if spec.kind == "cube" else 0.0) / 2 * 1.2
+
+
+def _container_holding(state, name: str) -> str | None:
+    obj = state.objects[name]
+    for n, o in state.objects.items():
+        if o.spec.kind in CONTAINERS and np.linalg.norm(o.pos[:2] - obj.pos[:2]) < _footprint(o.spec) - 0.01:
+            return n
+    return None
+
+
+def _clear_z(state) -> float:
+    """Transit height that clears every object (plus whatever hangs from the gripper)."""
+    held_h = state.objects[state.held].spec.height if state.held else 0.0
+    tops = [float(o.pos[2]) + (o.spec.height / 2 if o.spec.graspable else o.spec.height)
+            for n, o in state.objects.items() if n != state.held and o.spec.kind != "mat"]
+    return max(CLEAR_Z, max(tops, default=0.0) + held_h + 0.07)
+
+
+def _best_grasp_yaw(state, name: str) -> float:
+    """Among equivalent grasp yaws, prefer the one whose fingers stay clear of neighbours."""
+    obj = state.objects[name]
+    finger_offset = obj.spec.grip_width / 2 + 0.028
+    inside = {n for n, o in state.objects.items()
+              if o.spec.kind in CONTAINERS and np.linalg.norm(o.pos[:2] - obj.pos[:2]) < _footprint(o.spec)}
+    neighbours = [(o.pos[:2], _footprint(o.spec)) for n, o in state.objects.items()
+                  if n not in (name, state.held) and n not in inside and o.spec.kind != "mat"
+                  and np.linalg.norm(o.pos[:2] - obj.pos[:2]) < 0.25]
+
+    def score(yaw: float) -> float:
+        closing = np.array([math.sin(yaw), -math.cos(yaw)])
+        fingers = [obj.pos[:2] + closing * finger_offset, obj.pos[:2] - closing * finger_offset]
+        clearance = min((float(np.linalg.norm(f - c)) - r for f in fingers for c, r in neighbours), default=1.0)
+        return min(clearance, 0.03) - 0.01 * abs(wrap(yaw - state.tcp_yaw))
+
+    return max(grasp_yaw_candidates(obj.spec.kind, obj.yaw), key=score)
 
 
 def _free_spot(state, container: str, held: str) -> tuple[float, float]:

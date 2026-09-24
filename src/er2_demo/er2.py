@@ -33,6 +33,8 @@ Actions:
   "pick"  – grasp an object. points: [[y, x]] ON the object to pick, in Image 1.
   "place" – put down the held object. points: [[y, x]] in Image 1 where it should go.
             To put it in a bowl/bin, point at the inside of that container.
+            To STACK it on another object, point at the top face of the object underneath.
+            To put it on the table, point at an empty patch of table away from other objects.
   "home"  – move the arm back to its home pose (e.g. if it blocks the view).
   "done"  – the task is complete (or impossible); explain in "thought".
 
@@ -40,6 +42,8 @@ Rules:
   * Points are [y, x] normalised to 0–1000 in Image 1 (y down, x right).
   * You can hold only one object at a time; always "place" before the next "pick".
   * Only use objects you can see. Do not repeat an action that already succeeded.
+  * Flat coloured mats are zones on the table, not objects; objects standing on them are "on the mat".
+  * Use the side camera to judge relative heights and sizes.
 
 Reply with ONLY a JSON object:
 {"thought": "<short reasoning>", "action": "pick|place|home|done",

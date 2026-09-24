@@ -148,6 +148,13 @@ class SimRunner:
         def apply() -> None:
             if self._exec is not None or name == self._held:
                 return
+            mocap = self.model.body(name).mocapid[0]
+            if mocap >= 0:
+                self.data.mocap_pos[mocap, :2] = pos[:2]
+                if yaw is not None:
+                    self.data.mocap_quat[mocap] = [math.cos(yaw / 2), 0, 0, math.sin(yaw / 2)]
+                mujoco.mj_forward(self.model, self.data)
+                return
             adr = self.model.joint(f"{name}_free").qposadr[0]
             vadr = self.model.joint(f"{name}_free").dofadr[0]
             self.data.qpos[adr:adr + 3] = pos
@@ -277,7 +284,7 @@ class SimRunner:
             yaw = yaw_of(body.xmat.reshape(3, 3))
             objects.append(ObjectSpec(obj.name, obj.kind, obj.color, float(body.xpos[0]), float(body.xpos[1]),
                                       float(yaw), list(obj.size)))
-        return SceneSpec(self.scene.name, self.scene.prompt, objects)
+        return SceneSpec(self.scene.name, self.scene.prompt, objects, self.scene.max_steps)
 
     def _state(self) -> RobotState:
         tcp = self.data.site("tcp")

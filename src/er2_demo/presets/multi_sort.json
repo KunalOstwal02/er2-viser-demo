@@ -1,0 +1,19 @@
+{
+  "name": "multi_sort",
+  "prompt": "Sort by shape and colour: red cubes go in the red bin, blue cubes go in the blue bin, and every cylinder (whatever its colour) goes in the white bowl. Leave everything else where it is.",
+  "max_steps": 20,
+  "objects": [
+    {"name": "red_bin", "kind": "bin", "color": "red", "x": 0.36, "y": 0.3},
+    {"name": "blue_bin", "kind": "bin", "color": "blue", "x": 0.36, "y": -0.3},
+    {"name": "white_bowl", "kind": "bowl", "color": "white", "x": 0.66, "y": 0.26},
+    {"name": "green_bowl", "kind": "bowl", "color": "green", "x": 0.66, "y": -0.26},
+    {"name": "red_cube", "kind": "cube", "color": "red", "x": 0.46, "y": -0.1, "yaw": 0.4},
+    {"name": "small_red_cube", "kind": "cube", "color": "red", "x": 0.6, "y": 0.06, "yaw": -0.3, "size": [0.034]},
+    {"name": "blue_cube", "kind": "cube", "color": "blue", "x": 0.53, "y": 0.15, "yaw": 0.9},
+    {"name": "red_cylinder", "kind": "cylinder", "color": "red", "x": 0.43, "y": 0.1},
+    {"name": "blue_cylinder", "kind": "cylinder", "color": "blue", "x": 0.58, "y": -0.08},
+    {"name": "yellow_cylinder", "kind": "cylinder", "color": "yellow", "x": 0.5, "y": 0.0},
+    {"name": "yellow_cube", "kind": "cube", "color": "yellow", "x": 0.66, "y": -0.04, "yaw": 0.2},
+    {"name": "green_cuboid", "kind": "cuboid", "color": "green", "x": 0.4, "y": -0.16, "yaw": -0.7}
+  ]
+}

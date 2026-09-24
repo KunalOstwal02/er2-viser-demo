@@ -153,55 +153,61 @@ class Planner:
 
     # ---- primitives -----------------------------------------------------------------------
 
-    def _rise_first(self, pos: np.ndarray, yaw: float, grip: float) -> list[Waypoint]:
-        if pos[2] < CLEAR_Z - 0.02:
-            return [Waypoint(np.array([pos[0], pos[1], CLEAR_Z]), yaw, grip)]
+    def _rise_first(self, pos: np.ndarray, yaw: float, grip: float, clear_z: float) -> list[Waypoint]:
+        if pos[2] < clear_z - 0.02:
+            return [Waypoint(np.array([pos[0], pos[1], clear_z]), yaw, grip)]
         return []
 
-    def pick(self, q: np.ndarray, grip: float, target: np.ndarray, grasp_yaw: float) -> JointTrajectory:
+    def pick(self, q: np.ndarray, grip: float, target: np.ndarray, grasp_yaw: float, *,
+             open_grip: float = GRIPPER_OPEN, clear_z: float = CLEAR_Z) -> JointTrajectory:
+        """Approach from above with the fingers pre-shaped to ``open_grip``, close, lift."""
         pos, yaw = self.fk(q)
         x, y, z = target
-        wps = self._rise_first(pos, yaw, grip)
+        clear_z = max(clear_z, z + 0.08)
+        wps = self._rise_first(pos, yaw, grip, clear_z)
         wps += [
-            Waypoint(np.array([x, y, CLEAR_Z]), grasp_yaw, GRIPPER_OPEN),
-            Waypoint(np.array([x, y, z + 0.06]), grasp_yaw, GRIPPER_OPEN),
-            Waypoint(np.array([x, y, z]), grasp_yaw, GRIPPER_OPEN, speed=0.08),
+            Waypoint(np.array([x, y, clear_z]), grasp_yaw, open_grip),
+            Waypoint(np.array([x, y, z + 0.06]), grasp_yaw, open_grip),
+            Waypoint(np.array([x, y, z]), grasp_yaw, open_grip, speed=0.08),
             Waypoint(np.array([x, y, z]), grasp_yaw, GRIPPER_CLOSED, min_duration=0.8, event="closed"),
             Waypoint(np.array([x, y, z + 0.04]), grasp_yaw, GRIPPER_CLOSED, speed=0.08, event="lift_check"),
-            Waypoint(np.array([x, y, CLEAR_Z]), grasp_yaw, GRIPPER_CLOSED, event="picked"),
+            Waypoint(np.array([x, y, clear_z]), grasp_yaw, GRIPPER_CLOSED, event="picked"),
         ]
         return self.plan(q, grip, wps)
 
-    def place(self, q: np.ndarray, grip: float, target: np.ndarray) -> JointTrajectory:
-        pos, yaw = self.fk(q)
+    def place(self, q: np.ndarray, grip: float, target: np.ndarray, *, yaw: float | None = None,
+              clear_z: float = CLEAR_Z, release_speed: float = 0.08) -> JointTrajectory:
+        """Carry the held object over ``target`` (optionally re-orienting it), lower, release, go home."""
+        pos, cur_yaw = self.fk(q)
+        place_yaw = cur_yaw if yaw is None else yaw
         x, y, z = target
-        wps = self._rise_first(pos, yaw, grip)
+        clear_z = max(clear_z, z + 0.08)
+        wps = self._rise_first(pos, cur_yaw, grip, clear_z)
         wps += [
-            Waypoint(np.array([x, y, CLEAR_Z]), yaw, grip),
-            Waypoint(np.array([x, y, z + 0.05]), yaw, grip),
-            Waypoint(np.array([x, y, z]), yaw, grip, speed=0.08, event="release"),
-            Waypoint(np.array([x, y, z]), yaw, GRIPPER_OPEN, min_duration=0.5),
-            Waypoint(np.array([x, y, CLEAR_Z]), yaw, GRIPPER_OPEN),
+            Waypoint(np.array([x, y, clear_z]), place_yaw, grip),
+            Waypoint(np.array([x, y, z + 0.05]), place_yaw, grip),
+            Waypoint(np.array([x, y, z]), place_yaw, grip, speed=release_speed, event="release"),
+            Waypoint(np.array([x, y, z]), place_yaw, GRIPPER_OPEN, min_duration=0.5),
+            Waypoint(np.array([x, y, z + 0.05]), place_yaw, GRIPPER_OPEN, speed=0.1),
+            Waypoint(np.array([x, y, clear_z]), place_yaw, GRIPPER_OPEN),
             Waypoint(self.home_pos.copy(), self.home_yaw, GRIPPER_OPEN),
         ]
         return self.plan(q, grip, wps)
 
-    def home(self, q: np.ndarray, grip: float) -> JointTrajectory:
+    def home(self, q: np.ndarray, grip: float, *, clear_z: float = CLEAR_Z) -> JointTrajectory:
         pos, yaw = self.fk(q)
-        wps = self._rise_first(pos, yaw, grip)
+        wps = self._rise_first(pos, yaw, grip, clear_z)
         wps.append(Waypoint(self.home_pos.copy(), self.home_yaw, grip))
         return self.plan(q, grip, wps)
 
 
-def grasp_yaw_for(kind: str, object_yaw: float, current_yaw: float) -> float:
-    """Pick the symmetric-equivalent grasp yaw closest to the current wrist yaw."""
+def grasp_yaw_candidates(kind: str, object_yaw: float) -> list[float]:
+    """Wrist yaws that close the fingers across a graspable width of the object."""
     if kind in ("sphere", "cylinder"):
-        candidates = [current_yaw]
-    elif kind == "cube":
-        candidates = [object_yaw + k * math.pi / 2 for k in range(4)]
-    else:  # cuboid: close across the short side (local y) → two options
-        candidates = [object_yaw, object_yaw + math.pi]
-    return min((wrap(c) for c in candidates), key=lambda c: abs(wrap(c - current_yaw)))
+        return [wrap(math.radians(a)) for a in range(-90, 90, 15)]
+    if kind == "cube":
+        return [wrap(object_yaw + k * math.pi / 2) for k in range(4)]
+    return [wrap(object_yaw), wrap(object_yaw + math.pi)]  # cuboid: across the short side
 
 
 def arm_q_from(model: mujoco.MjModel, data: mujoco.MjData) -> np.ndarray:

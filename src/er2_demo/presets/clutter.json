@@ -1,0 +1,15 @@
+{
+  "name": "clutter",
+  "prompt": "Clear the grey mat: move every object that is on the grey mat onto the bare table, off the mat.",
+  "max_steps": 20,
+  "objects": [
+    {"name": "grey_mat", "kind": "mat", "color": "grey", "x": 0.5, "y": 0.0, "size": [0.27, 0.3]},
+    {"name": "red_cube", "kind": "cube", "color": "red", "x": 0.44, "y": -0.08, "yaw": 0.2},
+    {"name": "blue_cylinder", "kind": "cylinder", "color": "blue", "x": 0.44, "y": 0.0},
+    {"name": "yellow_cube", "kind": "cube", "color": "yellow", "x": 0.445, "y": 0.085, "yaw": -0.6},
+    {"name": "green_cylinder", "kind": "cylinder", "color": "green", "x": 0.56, "y": -0.085},
+    {"name": "orange_cuboid", "kind": "cuboid", "color": "orange", "x": 0.56, "y": 0.005, "yaw": 1.2},
+    {"name": "purple_cube", "kind": "cube", "color": "purple", "x": 0.555, "y": 0.09, "yaw": 0.5},
+    {"name": "white_bowl", "kind": "bowl", "color": "white", "x": 0.4, "y": 0.3}
+  ]
+}

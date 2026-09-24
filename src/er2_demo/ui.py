@@ -23,6 +23,7 @@ from er2_demo.skills import PlannedAction, to_pixel
 log = logging.getLogger(__name__)
 
 ACCENT = (66, 133, 244)
+SIZE_SCALES = {"S": 0.72, "M": 1.0, "L": 1.3}
 TARGET_RGB = (255, 0, 200)
 
 
@@ -116,7 +117,8 @@ class DemoApp:
                 self.grasp_mode = gui.add_dropdown("Grasp", options=SimRunner.GRASP_MODES,
                                                    initial_value=self.sim.grasp_mode)
                 self.speed = gui.add_slider("Speed (m/s)", min=0.1, max=0.5, step=0.05, initial_value=0.25)
-                self.max_steps = gui.add_slider("Max steps", min=3, max=20, step=1, initial_value=12)
+                self.max_steps = gui.add_slider("Max steps", min=3, max=40, step=1,
+                                                initial_value=self.sim.scene.max_steps)
             self.log_md = gui.add_markdown("")
 
         with tabs.add_tab("Cameras", icon=viser.Icon.CAMERA):
@@ -132,6 +134,7 @@ class DemoApp:
             with gui.add_folder("Add object"):
                 self.new_kind = gui.add_dropdown("Shape", options=tuple(DEFAULT_SIZES), initial_value="cube")
                 self.new_color = gui.add_dropdown("Color", options=tuple(COLORS), initial_value="green")
+                self.new_size = gui.add_dropdown("Size", options=tuple(SIZE_SCALES), initial_value="M")
                 self.spawn_btn = gui.add_button("Add to table", icon=viser.Icon.PLUS)
             with gui.add_folder("Save layout"):
                 self.save_name = gui.add_text("Preset name", "my_scene")
@@ -145,6 +148,7 @@ class DemoApp:
             if self._editable():
                 scene = SceneSpec.load(list_presets()[self.preset.value])
                 self.task.value = scene.prompt
+                self.max_steps.value = scene.max_steps
                 self._after(self.sim.load_scene(scene))
                 self._set_banner("")
 
@@ -209,7 +213,12 @@ class DemoApp:
                 return
             kind, color = self.new_kind.value, self.new_color.value
             x, y = self._free_table_spot()
-            obj = ObjectSpec(f"{color}_{kind}", kind, color, x, y)
+            scale = SIZE_SCALES[self.new_size.value]
+            prefix = {"S": "small_", "M": "", "L": "large_"}[self.new_size.value]
+            size = [v * scale for v in DEFAULT_SIZES[kind]]
+            if kind in ("cube", "cuboid", "cylinder", "sphere"):  # keep graspable objects within the 8 cm gripper
+                size = [min(v, 0.065) for v in size]
+            obj = ObjectSpec(f"{prefix}{color}_{kind}", kind, color, x, y, size=size)
             self.sim.spawn(obj).result()
             self._refresh_objects(select=obj.name)
 
@@ -217,7 +226,7 @@ class DemoApp:
         def _(event: viser.GuiEvent) -> None:
             name = "".join(c for c in self.save_name.value if c.isalnum() or c in "_-") or "my_scene"
             scene = self.sim.current_scene()
-            scene.name, scene.prompt = name, self.task.value
+            scene.name, scene.prompt, scene.max_steps = name, self.task.value, int(self.max_steps.value)
             scene.save(PRESET_DIR / f"{name}.json")
             self.preset.options = list(list_presets())
             self._notify(event.client, "Saved", f"Preset '{name}' saved.")
@@ -256,6 +265,7 @@ class DemoApp:
             self._refresh_objects()
             self.task.value = rec.task
             self._set_banner(f"⏪ **REPLAY** of recorded ER-2 run `{self.recording.value}`")
+            self.agent.max_steps = max(self.agent.max_steps, len(rec.turns))  # replay every recorded turn
             self.agent.start(rec.task, ReplayClient(rec.turns, rec.assessment), None)
         self._set_running(True)
 
