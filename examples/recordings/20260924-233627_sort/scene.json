@@ -1,0 +1,76 @@
+{
+  "name": "sort",
+  "prompt": "Sort the objects by color: put every red object in the red bin and every blue object in the blue bin.",
+  "objects": [
+    {
+      "name": "red_bin",
+      "kind": "bin",
+      "color": "red",
+      "x": 0.5199999999998027,
+      "y": 0.3000000001333204,
+      "yaw": -1.951562755930351e-17,
+      "size": [
+        0.16,
+        0.05
+      ]
+    },
+    {
+      "name": "blue_bin",
+      "kind": "bin",
+      "color": "blue",
+      "x": 0.5199999999998027,
+      "y": -0.29999999986667975,
+      "yaw": -1.2063316943764062e-17,
+      "size": [
+        0.16,
+        0.05
+      ]
+    },
+    {
+      "name": "red_cube",
+      "kind": "cube",
+      "color": "red",
+      "x": 0.4200000000384085,
+      "y": -0.07999999998358702,
+      "yaw": 0.5,
+      "size": [
+        0.045
+      ]
+    },
+    {
+      "name": "blue_cube",
+      "kind": "cube",
+      "color": "blue",
+      "x": 0.5999999999519351,
+      "y": 0.07999999995496816,
+      "yaw": -0.20000000000000004,
+      "size": [
+        0.045
+      ]
+    },
+    {
+      "name": "red_cylinder",
+      "kind": "cylinder",
+      "color": "red",
+      "x": 0.6199967614785289,
+      "y": -0.10001233419529273,
+      "yaw": -1.0215176214588481e-07,
+      "size": [
+        0.022,
+        0.06
+      ]
+    },
+    {
+      "name": "blue_cylinder",
+      "kind": "cylinder",
+      "color": "blue",
+      "x": 0.39999379876341573,
+      "y": 0.09998302732594107,
+      "yaw": 8.544046845331592e-09,
+      "size": [
+        0.022,
+        0.06
+      ]
+    }
+  ]
+}

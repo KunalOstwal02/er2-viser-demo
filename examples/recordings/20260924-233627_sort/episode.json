@@ -1,0 +1,53 @@
+{
+  "task": "Sort the objects by color: put every red object in the red bin and every blue object in the blue bin.",
+  "model": "gemini-robotics-er-2-preview",
+  "scene": "sort",
+  "turns": [
+    {
+      "step": 1,
+      "raw": "{\"thought\": \"I will pick up the red cube first and place it in the red bin.\", \"action\": \"pick\", \"points\": [[465, 445]], \"label\": \"red cube\"}",
+      "outcome": "succeeded"
+    },
+    {
+      "step": 2,
+      "raw": "{\"thought\": \"The robot is holding a red cube. I should place it in the red bin on the right.\", \"action\": \"place\", \"points\": [[530, 720]], \"label\": \"red bin\"}",
+      "outcome": "succeeded"
+    },
+    {
+      "step": 3,
+      "raw": "{\"thought\": \"I will pick the red cylinder to place it in the red bin.\", \"action\": \"pick\", \"points\": [[595, 421]], \"label\": \"red cylinder\"}",
+      "outcome": "succeeded"
+    },
+    {
+      "step": 4,
+      "raw": "{\"thought\": \"The gripper is holding the red cylinder. I will place it in the red bin.\", \"action\": \"place\", \"points\": [[530, 720]], \"label\": \"red bin\"}",
+      "outcome": "succeeded"
+    },
+    {
+      "step": 5,
+      "raw": "{\"thought\": \"I will pick up the blue cube to put it in the blue bin.\", \"action\": \"pick\", \"points\": [[591, 561]], \"label\": \"blue cube\"}",
+      "outcome": "succeeded"
+    },
+    {
+      "step": 6,
+      "raw": "{\"thought\": \"I am holding the blue cube. I will place it in the blue bin.\", \"action\": \"place\", \"points\": [[530, 275]], \"label\": \"blue bin\"}",
+      "outcome": "succeeded"
+    },
+    {
+      "step": 7,
+      "raw": "{\"thought\": \"I will pick up the blue cylinder and place it in the blue bin.\", \"action\": \"pick\", \"points\": [[446, 566]], \"label\": \"blue cylinder\"}",
+      "outcome": "succeeded"
+    },
+    {
+      "step": 8,
+      "raw": "{\"thought\": \"I am holding the blue cylinder. I need to place it in the blue bin on the left.\", \"action\": \"place\", \"points\": [[530, 275]], \"label\": \"blue bin\"}",
+      "outcome": "succeeded"
+    },
+    {
+      "step": 9,
+      "raw": "{\"thought\": \"All red objects are in the red bin, and all blue objects are in the blue bin. The task is complete.\", \"action\": \"done\", \"points\": [[530, 720]], \"label\": \"done\"}",
+      "outcome": "done"
+    }
+  ],
+  "assessment": "{\n  \"success\": true,\n  \"explanation\": \"All red objects have been successfully placed in the red bin, and all blue objects have been placed in the blue bin.\"\n}"
+}

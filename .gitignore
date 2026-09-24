@@ -1,7 +1,7 @@
 __pycache__/
 *.egg-info/
 .pytest_cache/
-recordings/
+/recordings/
 third_party/mujoco_menagerie/
 !third_party/README.md
 
