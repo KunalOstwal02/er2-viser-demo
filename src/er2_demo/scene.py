@@ -11,11 +11,10 @@ from pathlib import Path
 import mujoco
 import numpy as np
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-PANDA_DIR = Path(
-    os.environ.get("ER2_PANDA_DIR", REPO_ROOT / "third_party/mujoco_menagerie/franka_emika_panda")
-)
-PRESET_DIR = Path(__file__).resolve().parent / "presets"
+from er2_demo.assets import panda_dir
+
+PRESET_DIR = Path(__file__).resolve().parent / "presets"  # built-in presets (read-only)
+USER_PRESET_DIR = Path(os.environ.get("ER2_PRESETS_DIR", "presets"))  # saved layouts, relative to the cwd
 
 ARM_JOINTS = tuple(f"joint{i}" for i in range(1, 8))
 HOME_Q = np.array([0.0, 0.0, 0.0, -1.57079, 0.0, 1.57079, -0.7853])
@@ -147,7 +146,11 @@ class SceneSpec:
 
 
 def list_presets() -> dict[str, Path]:
-    return {p.stem: p for p in sorted(PRESET_DIR.glob("*.json"))}
+    """Built-in presets plus any saved in the user preset folder (which win on name clashes)."""
+    found = {p.stem: p for p in sorted(PRESET_DIR.glob("*.json"))}
+    if USER_PRESET_DIR.is_dir():
+        found.update({p.stem: p for p in sorted(USER_PRESET_DIR.glob("*.json"))})
+    return found
 
 
 def look_at_quat(eye: np.ndarray, target: np.ndarray) -> np.ndarray:
@@ -222,10 +225,15 @@ def _add_object(spec: mujoco.MjSpec, obj: ObjectSpec) -> None:
 
 def panda_spec() -> mujoco.MjSpec:
     """The Menagerie Panda with a fingertip TCP site and grippier finger pads."""
-    path = PANDA_DIR / "panda.xml"
+    path = panda_dir() / "panda.xml"
     if not path.exists():
-        raise FileNotFoundError(f"Panda MJCF not found at {path}; see third_party/README.md")
+        raise FileNotFoundError(f"Panda MJCF not found at {path}; set ER2_PANDA_DIR or see third_party/README.md")
     spec = mujoco.MjSpec.from_file(str(path))
+    # Gravity compensation (as on the real Panda's controller): without it the position servos
+    # sag several centimetres at full reach, and plans starting from the sagged pose jump.
+    for body in spec.bodies:
+        if body.name.startswith("link") or body.name in ("hand", "left_finger", "right_finger"):
+            body.gravcomp = 1.0
     hand = spec.body("hand")
     hand.add_site(name="tcp", pos=[0, 0, TCP_OFFSET], size=[0.005, 0, 0], rgba=[1, 0, 1, 0])
     for geom in spec.geoms:

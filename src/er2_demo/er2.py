@@ -90,11 +90,13 @@ def extract_json(text: str) -> dict:
     try:
         data = json.loads(text)
     except json.JSONDecodeError:
-        start, end = text.find("{"), text.rfind("}")
-        if start < 0 or end <= start:
+        # ER-2 sometimes appends a stray "}" or chatter after a valid object: decode the first
+        # complete JSON value and ignore whatever follows it.
+        starts = [i for i in (text.find("{"), text.find("[")) if i >= 0]
+        if not starts:
             raise ER2Error("response contained no JSON object") from None
         try:
-            data = json.loads(text[start:end + 1])
+            data, _ = json.JSONDecoder().raw_decode(text[min(starts):])
         except json.JSONDecodeError as error:
             raise ER2Error(f"invalid JSON: {error}") from None
     if isinstance(data, list) and data and isinstance(data[0], dict):

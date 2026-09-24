@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import threading
 import time
 from dataclasses import dataclass, field
@@ -15,12 +16,13 @@ from PIL import Image
 
 from er2_demo.er2 import ASSESS_PROMPT, Action, Client, ER2Error, parse_action, parse_assessment
 from er2_demo.planner import PlanningError
-from er2_demo.scene import REPO_ROOT, SceneSpec
+from er2_demo.scene import SceneSpec
 from er2_demo.sim import Capture, SimRunner
 from er2_demo.skills import PlannedAction, SkillPlanner
 
 log = logging.getLogger(__name__)
-RECORDINGS_DIR = REPO_ROOT / "recordings"
+RECORDINGS_DIR = Path(os.environ.get("ER2_RECORDINGS_DIR", "recordings"))  # relative to the cwd
+EXAMPLES_DIR = Path(__file__).resolve().parents[2] / "examples" / "recordings"  # shipped in the repo
 
 
 class Hooks(Protocol):
@@ -65,10 +67,14 @@ class Recorder:
 
 
 def list_recordings() -> dict[str, Path]:
-    if not RECORDINGS_DIR.exists():
-        return {}
-    eps = [p for p in sorted(RECORDINGS_DIR.iterdir(), reverse=True) if (p / "episode.json").exists()]
-    return {p.name: p for p in eps}
+    """Your recordings (newest first), then the example episodes shipped with the repo."""
+    found: dict[str, Path] = {}
+    for root, prefix in ((RECORDINGS_DIR, ""), (EXAMPLES_DIR, "example: ")):
+        if root.is_dir():
+            for p in sorted(root.iterdir(), reverse=True):
+                if (p / "episode.json").exists():
+                    found[prefix + p.name] = p
+    return found
 
 
 @dataclass

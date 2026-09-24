@@ -37,7 +37,8 @@ class ObjectState:
 
 @dataclass
 class RobotState:
-    q: np.ndarray
+    q: np.ndarray  # last commanded arm joints: plans start here so consecutive motions join exactly
+    q_measured: np.ndarray
     grip: float
     tcp_pos: np.ndarray
     tcp_yaw: float
@@ -293,7 +294,8 @@ class SimRunner:
             body = self.data.body(obj.name)
             objects[obj.name] = ObjectState(obj, body.xpos.copy(), yaw_of(body.xmat.reshape(3, 3)))
         return RobotState(
-            q=arm_q_from(self.model, self.data),
+            q=self.data.ctrl[:7].copy(),
+            q_measured=arm_q_from(self.model, self.data),
             grip=float(self.data.ctrl[self.model.actuator("actuator8").id]),
             tcp_pos=tcp.xpos.copy(),
             tcp_yaw=yaw_of(tcp.xmat.reshape(3, 3)),

@@ -16,7 +16,7 @@ from PIL import Image, ImageDraw, ImageFont
 from er2_demo.agent import Agent, Recorder, Recording, list_recordings
 from er2_demo.er2 import MODEL_ID, Action, ER2Error, GeminiER2, ReplayClient
 from er2_demo.planner import PlanningError
-from er2_demo.scene import COLORS, DEFAULT_SIZES, PRESET_DIR, ObjectSpec, SceneSpec, list_presets
+from er2_demo.scene import COLORS, DEFAULT_SIZES, USER_PRESET_DIR, ObjectSpec, SceneSpec, list_presets
 from er2_demo.sim import Capture, SimRunner
 from er2_demo.skills import PlannedAction, to_pixel
 
@@ -227,9 +227,10 @@ class DemoApp:
             name = "".join(c for c in self.save_name.value if c.isalnum() or c in "_-") or "my_scene"
             scene = self.sim.current_scene()
             scene.name, scene.prompt, scene.max_steps = name, self.task.value, int(self.max_steps.value)
-            scene.save(PRESET_DIR / f"{name}.json")
+            USER_PRESET_DIR.mkdir(parents=True, exist_ok=True)
+            scene.save(USER_PRESET_DIR / f"{name}.json")
             self.preset.options = list(list_presets())
-            self._notify(event.client, "Saved", f"Preset '{name}' saved.")
+            self._notify(event.client, "Saved", f"Preset '{name}' saved to {USER_PRESET_DIR / (name + '.json')}.")
 
     # ---- actions ------------------------------------------------------------------------------
 

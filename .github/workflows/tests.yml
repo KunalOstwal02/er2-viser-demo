@@ -1,0 +1,26 @@
+name: tests
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      MUJOCO_GL: egl
+      PYOPENGL_PLATFORM: egl
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: System libraries for headless (Mesa) EGL rendering
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libegl-mesa0 libgles2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/er2-viser-demo
+          key: menagerie-panda-${{ hashFiles('src/er2_demo/panda_manifest.json') }}
+      - run: pip install -e ".[dev]"
+      - run: ruff check src tests
+      - run: pytest -q
