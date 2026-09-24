@@ -5,9 +5,13 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import sys
 import time
 
-os.environ.setdefault("MUJOCO_GL", "egl")
+# Offscreen rendering: EGL is the reliable headless-capable backend on Linux (NVIDIA or Mesa).
+# macOS/Windows use MuJoCo's default (GLFW/CGL/WGL). An explicit MUJOCO_GL always wins.
+if sys.platform.startswith("linux"):
+    os.environ.setdefault("MUJOCO_GL", "egl")
 
 from er2_demo.scene import SceneSpec, list_presets  # noqa: E402
 from er2_demo.sim import SimRunner  # noqa: E402

@@ -4,3 +4,6 @@ __pycache__/
 recordings/
 third_party/mujoco_menagerie/
 !third_party/README.md
+
+# user-local saved layouts
+/presets/

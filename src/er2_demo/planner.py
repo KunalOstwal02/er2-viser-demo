@@ -75,7 +75,9 @@ class Planner:
         self.arm_qadr = np.array([self.model.joint(f"joint{i}").qposadr[0] for i in range(1, 8)])
         self.finger_qadr = np.array([self.model.joint(n).qposadr[0] for n in ("finger_joint1", "finger_joint2")])
         self.tcp_task = mink.FrameTask("tcp", "site", position_cost=1.0, orientation_cost=0.6, lm_damping=1e-3)
-        self.posture = mink.PostureTask(self.model, cost=1e-2)
+        # Low gain: the null-space pull toward the home posture must be gradual, or the first sample
+        # after a far reach jumps (the arm "snaps" back toward home in one 10 ms step).
+        self.posture = mink.PostureTask(self.model, cost=1e-2, gain=0.05)
         self.limits = [mink.ConfigurationLimit(self.model)]
         home = self._full_q(HOME_Q)
         self.posture.set_target(home)

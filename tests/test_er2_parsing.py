@@ -27,3 +27,12 @@ def test_bad_action_rejected():
 
 def test_assessment():
     assert parse_assessment('{"success": true, "explanation": "ok"}').success
+
+
+def test_real_er2_reply_with_trailing_brace():
+    """Verbatim ER-2 replies from live runs: a valid object followed by a stray brace."""
+    raw = ('{"thought": "I am holding the medium blue cube.", "action": "place", '
+           '"points": [[485, 310]], "label": "large red cube"}\n}')
+    assert parse_action(raw).point_tuples() == [(485.0, 310.0)]
+    raw = '{\n  "thought": "pick",\n  "action": "pick",\n  "points": [[498, 698]],\n  "label": "red cube"\n}\n}'
+    assert parse_action(raw).action == "pick"
