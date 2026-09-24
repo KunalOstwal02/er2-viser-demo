@@ -3,7 +3,7 @@ message: "If you use this software, please cite it as below."
 title: "ER-2 Viser Playground: Gemini Robotics ER 2 driving a simulated Franka Panda in MuJoCo + Viser"
 type: software
 authors:
-  - alias: KunalOstwal02
+  - alias: Kunal Ostwal
 version: 0.1.0
 date-released: 2026-09-25
 license: MIT
